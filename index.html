@@ -9,11 +9,13 @@
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-    }
-    #map {
       width: 100%;
       height: 100%;
+      overflow: hidden;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
     }
   </style>
 </head>
@@ -26,9 +28,35 @@
       window.wechatReady = true;
     }, false);
 
-    async function fetchPOIs() {
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search)
+
+      const boundaryParam = params.get("boundary");
+      let boundaryPoints = [];
+
+      if (boundaryParam) {
+        try {
+          boundaryPoints = JSON.parse(decodeURIComponent(boundaryParam));
+          console.log("Boundary: ", boundaryPoints)
+        } catch (e) {
+          console.error("Error parsing boundary:", e);
+        }
+      }
+
+      return {
+        lat: parseFloat(params.get("lat")) || 40.4168,
+        lng: parseFloat(params.get("lng")) || -3.7038,
+        zoom: parseInt(params.get("zoom")) || 10,
+        boundary: boundaryPoints,
+        tourist_destination: params.get("tourist_destination") || "comunidaddemadrid"
+      }
+    }
+
+    const params = getQueryParams();
+
+    async function fetchPOIs(tourist_destination, latGeneral, lngGeneral, zoomGeneral, boundary) {
       try {
-        const response = await fetch("https://api.inventrip.com/v100/map-poi-geojson?api_key=C0munid%40dDeM%40dr%21d&tourist_destination=comunidaddemadrid&language=en&show_hidden=false");
+        const response = await fetch(`https://api.inventrip.com/v100/map-poi-geojson?api_key=C0munid%40dDeM%40dr%21d&tourist_destination=${tourist_destination}&language=en&show_hidden=false`);
         const data = await response.json();
         const pois = data.features.map(f => ({
           lat: f.geometry.coordinates[1],
@@ -37,19 +65,71 @@
           icon: f.properties.icon_image,
           zoom: f.properties.zoom_level || 10
         }));
-        initMap(pois);
+        initMap(pois, latGeneral, lngGeneral, zoomGeneral, boundary);
       } catch (err) {
         console.error("Error al obtener POIs:", err);
       }
     }
 
-    function initMap(pois) {
+    function initMap(pois, centerLat, centerLng, zoom, boundary) {
       const map = new BMap.Map("map");
-      const center = pois.length
-        ? new BMap.Point(pois[0].lng, pois[0].lat)
-        : new BMap.Point(116.404, 39.915);
-      map.centerAndZoom(center, 10);
+      const center = new BMap.Point(centerLng, centerLat);
+      map.centerAndZoom(center, zoom);
+      map.setMinZoom(zoom);
       map.enableScrollWheelZoom();
+
+      // Dibujar el rectángulo del boundary en el mapa
+      const sw = new BMap.Point(boundary.xmin, boundary.ymin);
+      const ne = new BMap.Point(boundary.xmax, boundary.ymax);
+      const rectangle = new BMap.Polygon([
+        sw,
+        new BMap.Point(boundary.xmax, boundary.ymin),
+        ne,
+        new BMap.Point(boundary.xmin, boundary.ymax),
+        sw
+      ], {
+        strokeColor: "red",
+        strokeWeight: 2,
+        strokeOpacity: 0.7,
+        fillColor: "rgba(255, 0, 0, 0.05)"
+      });
+      map.addOverlay(rectangle);
+
+      const restrictBounds = new BMap.Bounds(
+        new BMap.Point(boundary.xmin, boundary.ymin),
+        new BMap.Point(boundary.xmax, boundary.ymax)
+      );
+
+      let isAdjusting = false;
+
+      map.addEventListener("moveend", () => {
+        if (isAdjusting) {
+          isAdjusting = false;
+          return;
+        }
+
+        const center = map.getCenter();
+        console.log("Mapa movido. Centro actual:", center.lng, center.lat);
+
+        let clampedLng = center.lng;
+        let clampedLat = center.lat;
+
+        if (center.lng < boundary.xmin) clampedLng = boundary.xmin;
+        if (center.lng > boundary.xmax) clampedLng = boundary.xmax;
+        if (center.lat < boundary.ymin) clampedLat = boundary.ymin;
+        if (center.lat > boundary.ymax) clampedLat = boundary.ymax;
+
+        const wasAdjusted = clampedLng !== center.lng || clampedLat !== center.lat;
+
+        if (wasAdjusted) {
+          console.log("Centro fuera de límites. Corrigiendo a:", clampedLng, clampedLat);
+          isAdjusting = true;
+          const adjustedPoint = new BMap.Point(clampedLng, clampedLat);
+          map.panTo(adjustedPoint);
+        } else {
+          console.log("Centro dentro del boundary. No se ajusta.");
+        }
+      });
 
       map.setMapStyle({
         styleJson: [
@@ -159,7 +239,7 @@
       updateLabelsVisibility();
     }
 
-    fetchPOIs();
+    fetchPOIs(params.tourist_destination, params.lat, params.lng, params.zoom, params.boundary);
   </script>
 </body>
 </html>
