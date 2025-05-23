@@ -159,8 +159,10 @@
             type: "openDescription",
             name: poi.name
           };
-          
-          window.parent.postMessage({ data: [message] }, "*");
+
+          if (window.wx && window.wx.miniProgram && typeof window.wx.miniProgram.postMessage === 'function') {
+            wx.miniProgram.postMessage({ data: message });
+          }
         });
 
         markersWithLabels.push({ marker, label, point: poiPoint, minZoom: poi.zoom });
