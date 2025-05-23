@@ -159,12 +159,8 @@
             type: "openDescription",
             name: poi.name
           };
-          if (window.WeixinJSBridge?.invoke) {
-            WeixinJSBridge.invoke('postMessage', { data: [message] });
-          }
-          if (window.parent) {
-            window.parent.postMessage({ data: [message] }, "*");
-          }
+          
+          window.parent.postMessage({ data: [message] }, "*");
         });
 
         markersWithLabels.push({ marker, label, point: poiPoint, minZoom: poi.zoom });
