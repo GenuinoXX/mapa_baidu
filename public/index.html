@@ -153,15 +153,15 @@
         });
 
         map.addOverlay(label);
+        console.log("wx object:", window.wx);
 
         marker.addEventListener("click", () => {
-          const message = {
-            type: "openDescription",
-            name: poi.name
-          };
-
+          console.log("Trying to send message via miniProgram.postMessage");
           if (window.wx && window.wx.miniProgram && typeof window.wx.miniProgram.postMessage === 'function') {
-            wx.miniProgram.postMessage({ data: message });
+            console.log("miniProgram.postMessage IS supported");
+            wx.miniProgram.postMessage({ data: { type: "openDescription", name: poi.name } });
+          } else {
+            console.log("miniProgram.postMessage NOT supported");
           }
         });
 
