@@ -157,9 +157,11 @@
 
         marker.addEventListener("click", () => {
           console.log("Trying to send message via miniProgram.postMessage");
-          if (window.wx && window.wx.miniProgram && typeof window.wx.miniProgram.postMessage === 'function') {
+          if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
             console.log("miniProgram.postMessage IS supported");
-            wx.miniProgram.postMessage({ data: { type: "openDescription", name: poi.name } });
+            window.miniProgram.postMessage({ 
+              data: [{ type: "openDescription", name: poi.name }] // ¡Array!
+            });
           } else {
             console.log("miniProgram.postMessage NOT supported");
           }
