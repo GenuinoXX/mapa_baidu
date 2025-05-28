@@ -161,16 +161,19 @@
           // Método 1: Usar window.miniProgram.postMessage (recomendado)
           if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
             window.miniProgram.postMessage({
-              data: [{  // ¡Obligatorio: debe ser un array!
+              data: {
                 type: "openDescription",
                 name: poi.name
-              }]
+              }
             });
           }
           // Método 2: Alternativa con wx.miniProgram (para compatibilidad)
           else if (window.wx && wx.miniProgram && typeof wx.miniProgram.postMessage === 'function') {
             wx.miniProgram.postMessage({
-              data: [{ type: "openDescription", name: poi.name }]
+              data: {
+                type: "openDescription",
+                name: poi.name
+              }
             });
           }
           else {
