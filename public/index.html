@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mapa Baidu</title>
   <script src="https://api.map.baidu.com/api?v=3.0&ak=1Vkcxd0Q6iomR9TI8zNfzhwXWdeBYAd2"></script>
+  <script src="https://unpkg.com/vconsole/dist/vconsole.min.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -32,6 +33,9 @@
   </style>
 </head>
 <body>
+  <script>
+    new VConsole();
+  </script>
   <div id="map"></div>
   <script>
     window.wechatReady = false;
@@ -154,6 +158,8 @@
 
         map.addOverlay(label);
         console.log("wx object:", window.wx);
+        console.log("¿wx.miniProgram disponible?", typeof wx !== "undefined" && wx.miniProgram);
+
 
         marker.addEventListener("click", () => {
           console.log("Intentando enviar mensaje al miniprograma...");
