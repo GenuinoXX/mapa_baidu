@@ -160,16 +160,18 @@
         console.log("wx object:", window.wx);
         console.log("¿wx.miniProgram disponible?", typeof wx !== "undefined" && wx.miniProgram);
 
-
         marker.addEventListener("click", () => {
-          console.log("Enviando mensaje al miniprograma...");
-          if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
-            window.miniProgram.postMessage({
-              data: [{
-                type: "openDescription",
-                name: poi.name  // Asegúrate que poi.name no sea undefined
-              }]
-            });
+          console.log("POI seleccionado:", poi.name);
+          
+          // Actualiza el hash de la URL (sin recargar la página)
+          window.location.hash = `poi_name=${encodeURIComponent(poi.name)}`;
+          
+          // Opcional: Forzar notificación al miniprograma (alternativo)
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: "hashChange",
+              hash: window.location.hash
+            }, "*");
           }
         });
 
