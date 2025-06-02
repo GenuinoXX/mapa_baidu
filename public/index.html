@@ -164,26 +164,26 @@
         marker.addEventListener("click", () => {
           console.log("Intentando enviar mensaje al miniprograma...");
           
-          // Método 1: Usar window.miniProgram.postMessage (recomendado)
+          // Método 1: Usar window.miniProgram (formato correcto)
           if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
             window.miniProgram.postMessage({
-              data: {
+              data: [{
                 type: "openDescription",
                 name: poi.name
-              }
+              }]
             });
           }
-          // Método 2: Alternativa con wx.miniProgram (para compatibilidad)
-          else if (window.wx && wx.miniProgram && typeof wx.miniProgram.postMessage === 'function') {
+          // Método 2: Usar wx.miniProgram (alternativa)
+          else if (typeof wx !== 'undefined' && wx.miniProgram && typeof wx.miniProgram.postMessage === 'function') {
             wx.miniProgram.postMessage({
-              data: {
+              data: [{
                 type: "openDescription",
                 name: poi.name
-              }
+              }]
             });
           }
           else {
-            console.error("No se encontró el método postMessage en window.miniProgram o wx.miniProgram");
+            console.error("No se encontró window.miniProgram ni wx.miniProgram. Verifica el dominio y el entorno.");
           }
         });
 
