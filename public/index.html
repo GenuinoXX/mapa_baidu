@@ -162,21 +162,9 @@
 
 
         marker.addEventListener("click", () => {
-          console.log("Navegando a descripción de POI...");
-          
-          // Obtener la URL base sin parámetros
-          const baseUrl = window.location.origin + window.location.pathname;
-          
-          // Añadir el parámetro `poi_name` (conservando otros parámetros necesarios)
-          const newUrl = `${baseUrl}?poi_name=${encodeURIComponent(poi.name)}` +
-            `&tourist_destination=${params.tourist_destination}` +
-            `&lat=${params.lat}&lng=${params.lng}` +
-            `&zoom=${params.zoom}` +
-            `&boundary=${encodeURIComponent(JSON.stringify(params.boundary))}` +
-            (params.tourist_type ? `&tourist_type=${params.tourist_type}` : '');
-
-          // Forzar recarga con la nueva URL
-          window.location.href = newUrl;
+          console.log("POI seleccionado:", poi.name);
+          // Usa el hash para evitar recargar la página
+          window.location.hash = `poi_name=${encodeURIComponent(poi.name)}`;
         });
 
         markersWithLabels.push({ marker, label, point: poiPoint, minZoom: poi.zoom });
@@ -287,6 +275,15 @@
     }
 
     fetchPOIs(params.tourist_destination, params.lat, params.lng, params.zoom, params.boundary, params.tourist_type || null);
+    
+    // Monitorea cambios en el hash y envía al miniprograma
+    window.addEventListener("hashchange", () => {
+      if (window.miniProgram && typeof window.miniProgram.postMessage === "function") {
+        window.miniProgram.postMessage({
+          data: [{ hash: window.location.hash }]
+        });
+      }
+    });
   </script>
 </body>
 </html>
