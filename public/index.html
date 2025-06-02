@@ -162,29 +162,15 @@
 
 
         marker.addEventListener("click", () => {
-          console.log("Intentando enviar mensaje al miniprograma...");
+          console.log("Enviando mensaje mediante URL...");
           
-          // Método 1: Usar window.miniProgram (formato correcto)
-          if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
-            window.miniProgram.postMessage({
-              data: [{
-                type: "openDescription",
-                name: poi.name
-              }]
-            });
-          }
-          // Método 2: Usar wx.miniProgram (alternativa)
-          else if (typeof wx !== 'undefined' && wx.miniProgram && typeof wx.miniProgram.postMessage === 'function') {
-            wx.miniProgram.postMessage({
-              data: [{
-                type: "openDescription",
-                name: poi.name
-              }]
-            });
-          }
-          else {
-            console.error("No se encontró window.miniProgram ni wx.miniProgram. Verifica el dominio y el entorno.");
-          }
+          // Obtener la URL actual sin parámetros existentes
+          const baseUrl = window.location.href.split('?')[0];
+          
+          const newUrl = `${baseUrl}?action=openDescription&name=${encodeURIComponent(poi.name)}`;
+
+          // Cambiar la URL (esto notificará al miniprograma)
+          window.location.href = newUrl;
         });
 
         markersWithLabels.push({ marker, label, point: poiPoint, minZoom: poi.zoom });
