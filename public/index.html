@@ -162,14 +162,20 @@
 
 
         marker.addEventListener("click", () => {
-          console.log("Enviando mensaje mediante URL...");
+          console.log("Navegando a descripción de POI...");
           
-          // Obtener la URL actual sin parámetros existentes
-          const baseUrl = window.location.href.split('?')[0];
+          // Obtener la URL base sin parámetros
+          const baseUrl = window.location.origin + window.location.pathname;
           
-          const newUrl = `${baseUrl}?action=openDescription&name=${encodeURIComponent(poi.name)}`;
+          // Añadir el parámetro `poi_name` (conservando otros parámetros necesarios)
+          const newUrl = `${baseUrl}?poi_name=${encodeURIComponent(poi.name)}` +
+            `&tourist_destination=${params.tourist_destination}` +
+            `&lat=${params.lat}&lng=${params.lng}` +
+            `&zoom=${params.zoom}` +
+            `&boundary=${encodeURIComponent(JSON.stringify(params.boundary))}` +
+            (params.tourist_type ? `&tourist_type=${params.tourist_type}` : '');
 
-          // Cambiar la URL (esto notificará al miniprograma)
+          // Forzar recarga con la nueva URL
           window.location.href = newUrl;
         });
 
