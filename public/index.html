@@ -162,9 +162,15 @@
 
 
         marker.addEventListener("click", () => {
-          console.log("POI seleccionado:", poi.name);
-          // Usa el hash para evitar recargar la página
-          window.location.hash = `poi_name=${encodeURIComponent(poi.name)}`;
+          console.log("Enviando mensaje al miniprograma...");
+          if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
+            window.miniProgram.postMessage({
+              data: [{
+                type: "openDescription",
+                name: poi.name  // Asegúrate que poi.name no sea undefined
+              }]
+            });
+          }
         });
 
         markersWithLabels.push({ marker, label, point: poiPoint, minZoom: poi.zoom });
