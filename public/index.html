@@ -159,19 +159,31 @@
         map.addOverlay(label);
         console.log("wx object:", window.wx);
         console.log("¿wx.miniProgram disponible?", typeof wx !== "undefined" && wx.miniProgram);
+        console.log("¿Es miniprograma?", window.__wxjs_environment === 'miniprogram');
+        console.log("window.miniProgram existe?", !!window.miniProgram);
 
         marker.addEventListener("click", () => {
-          console.log("POI seleccionado:", poi.name);
+          console.log("Enviando mensaje al miniprograma...");
           
-          // Actualiza el hash de la URL (sin recargar la página)
-          window.location.hash = `poi_name=${encodeURIComponent(poi.name)}`;
-          
-          // Opcional: Forzar notificación al miniprograma (alternativo)
-          if (window.parent !== window) {
+          // Método 1: Usar window.miniProgram.postMessage (si está disponible)
+          if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
+            window.miniProgram.postMessage({
+              data: [{  // <-- ¡Array con un objeto dentro!
+                type: "openDescription",
+                name: poi.name
+              }]
+            });
+          }
+          // Método 2: Usar window.parent.postMessage (alternativa para Trial Version)
+          else if (window.parent && window.parent.postMessage) {
             window.parent.postMessage({
-              type: "hashChange",
-              hash: window.location.hash
+              type: "openDescription",
+              name: poi.name
             }, "*");
+          }
+          // Método 3: Fallback con URL hash (para casos extremos)
+          else {
+            window.location.hash = `poi_name=${encodeURIComponent(poi.name)}`;
           }
         });
 
