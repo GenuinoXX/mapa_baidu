@@ -163,28 +163,15 @@
         console.log("window.miniProgram existe?", !!window.miniProgram);
 
         marker.addEventListener("click", () => {
-          console.log("Enviando mensaje al miniprograma...");
-          
-          // Método 1: Usar window.miniProgram.postMessage (si está disponible)
-          if (window.miniProgram && typeof window.miniProgram.postMessage === 'function') {
-            window.miniProgram.postMessage({
-              data: [{  // <-- ¡Array con un objeto dentro!
-                type: "openDescription",
-                name: poi.name
-              }]
-            });
-          }
-          // Método 2: Usar window.parent.postMessage (alternativa para Trial Version)
-          else if (window.parent && window.parent.postMessage) {
-            window.parent.postMessage({
-              type: "openDescription",
-              name: poi.name
-            }, "*");
-          }
-          // Método 3: Fallback con URL hash (para casos extremos)
-          else {
-            window.location.hash = `poi_name=${encodeURIComponent(poi.name)}`;
-          }
+          console.log("Redirigiendo mediante URL...");
+          // Usa un parámetro único en la URL para forzar la recarga
+          const timestamp = new Date().getTime();
+          window.location.replace(
+            `${window.location.origin}${window.location.pathname}?` +
+            `action=openDescription&` +
+            `name=${encodeURIComponent(poi.name)}&` +
+            `ts=${timestamp}`  // Evita caché
+          );
         });
 
         markersWithLabels.push({ marker, label, point: poiPoint, minZoom: poi.zoom });
