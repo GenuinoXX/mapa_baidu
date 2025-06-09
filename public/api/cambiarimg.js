@@ -3,30 +3,27 @@ import sharp from 'sharp';
 
 export default async function handler(req, res) {
   const url = req.query.url;
-  if (!url) return res.status(400).send('Missing `url` parameter');
+
+  if (!url) {
+    return res.status(400).send('Missing `url` parameter');
+  }
 
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to download image");
 
-    const contentType = response.headers.get("content-type") || '';
-    const buffer = await response.buffer();
+    const svgBuffer = await response.buffer();
 
-    if (contentType.includes("svg")) {
-      // Es SVG: lo convertimos
-      const pngBuffer = await sharp(buffer).png().toBuffer();
-      res.setHeader("Content-Type", "image/png");
-      res.setHeader("Cache-Control", "public, max-age=86400");
-      return res.status(200).send(pngBuffer);
-    } else {
-      // No es SVG: reenviamos tal cual
-      res.setHeader("Content-Type", contentType);
-      res.setHeader("Cache-Control", "public, max-age=86400");
-      return res.status(200).send(buffer);
-    }
+    const pngBuffer = await sharp(svgBuffer)
+      .resize(64, 64, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 1 } })
+      .png({ force: true })
+      .toBuffer();
 
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.status(200).send(pngBuffer);
   } catch (err) {
-    console.error("Error:", err);
-    return res.status(500).send("Error fetching or converting image");
+    console.error('Error:', err);
+    res.status(500).send('Error converting image');
   }
 }
