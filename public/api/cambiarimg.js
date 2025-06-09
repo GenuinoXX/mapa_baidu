@@ -1,28 +1,42 @@
+import fs from 'fs/promises';
+import path from 'path';
 import fetch from 'node-fetch';
 import sharp from 'sharp';
 
-export default async function handler(req, res) {
-  const url = req.query.url;
+const CACHE_DIR = path.resolve('./public/icons');
 
-  if (!url) {
-    return res.status(400).send('Missing `url` parameter');
-  }
+export default async function handler(req, res) {
+  const imageUrl = req.query.url;
+  if (!imageUrl) return res.status(400).send('Missing `url` param');
+
+  const fileName = encodeURIComponent(imageUrl) + '.png';
+  const cachePath = path.join(CACHE_DIR, fileName);
 
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Failed to download image");
+    try {
+      const cached = await fs.readFile(cachePath);
+      res.setHeader('Content-Type', 'image/png');
+      return res.status(200).send(cached);
+    } catch (_) {}
+
+    const response = await fetch(imageUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    if (!response.ok) throw new Error("Error descargando imagen");
 
     const svgBuffer = await response.buffer();
-
     const pngBuffer = await sharp(svgBuffer)
+      .resize(64, 64)
       .png()
       .toBuffer();
 
+    await fs.mkdir(CACHE_DIR, { recursive: true });
+    await fs.writeFile(cachePath, pngBuffer);
+
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
     res.status(200).send(pngBuffer);
   } catch (err) {
-    console.error('Error:', err);
-    res.status(500).send('Error converting image');
+    console.error("Error cambiando imagen:", err.message);
+    res.status(500).send('Error');
   }
 }

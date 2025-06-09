@@ -2,11 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mapa Baidu</title>
+  <!-- API de Baidu Maps -->
   <script src="https://api.map.baidu.com/api?v=3.0&ak=1Vkcxd0Q6iomR9TI8zNfzhwXWdeBYAd2"></script>
+  <!-- Herramienta para depuración en móviles -->
   <script src="https://unpkg.com/vconsole/dist/vconsole.min.js"></script>
   <style>
+    /* Estilos básicos para ocupar toda la pantalla */
     html, body {
       margin: 0;
       padding: 0;
@@ -18,6 +21,7 @@
       height: 100%;
       width: 100%;
     }
+    /* Estilo para los marcadores de clúster */
     .cluster-count {
       background-color: orange;
       border-radius: 50%;
@@ -33,16 +37,22 @@
   </style>
 </head>
 <body>
+  <!-- Inicializa la consola de depuración -->
   <script>
     new VConsole();
   </script>
+
+  <!-- Contenedor del mapa -->
   <div id="map"></div>
+
   <script>
+    // Bandera para detectar si el entorno de WeChat está listo
     window.wechatReady = false;
     document.addEventListener('WeixinJSBridgeReady', function () {
       window.wechatReady = true;
     }, false);
 
+    // Extrae parámetros de la URL
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search)
       const boundaryParam = params.get("boundary");
@@ -69,6 +79,7 @@
 
     const params = getQueryParams();
 
+    // Solicita POIs desde la API externa y los pasa al mapa
     async function fetchPOIs(tourist_destination, latGeneral, lngGeneral, zoomGeneral, boundary, tourist_type) {
       let api = tourist_type
         ? `https://api.inventrip.com/v100/map-poi-geojson?api_key=C0munid%40dDeM%40dr%21d&tourist_destination=${tourist_destination}&language=en&show_hidden=false&tourist_type_or=${tourist_type}`
@@ -90,6 +101,7 @@
       }
     }
 
+    // Inicializa el mapa, coloca marcadores y gestiona interacciones
     function initMap(pois, centerLat, centerLng, zoom, boundary) {
       const map = new BMap.Map("map");
       const center = new BMap.Point(centerLng, centerLat);
@@ -97,6 +109,7 @@
       map.setMinZoom(zoom);
       map.enableScrollWheelZoom();
 
+      // Restringe el movimiento del mapa dentro de unos límites
       const restrictBounds = new BMap.Bounds(
         new BMap.Point(boundary.xmin, boundary.ymin),
         new BMap.Point(boundary.xmax, boundary.ymax)
@@ -113,6 +126,7 @@
         let clampedLng = center.lng;
         let clampedLat = center.lat;
 
+        // Ajusta si el centro se sale del límite
         if (center.lng < boundary.xmin) clampedLng = boundary.xmin;
         if (center.lng > boundary.xmax) clampedLng = boundary.xmax;
         if (center.lat < boundary.ymin) clampedLat = boundary.ymin;
@@ -127,12 +141,14 @@
         }
       });
 
+      // Controles básicos del mapa
       map.addControl(new BMap.NavigationControl());
       map.addControl(new BMap.ScaleControl());
 
       const markersWithLabels = [];
       const clusterMarkers = [];
 
+      // Agrega POIs como marcadores con etiquetas
       pois.forEach(poi => {
         const poiPoint = new BMap.Point(poi.lng, poi.lat);
         const icon = new BMap.Icon(poi.icon, new BMap.Size(32, 32));
@@ -157,42 +173,35 @@
         });
 
         map.addOverlay(label);
-        console.log("wx object:", window.wx);
-        console.log("¿wx.miniProgram disponible?", typeof wx !== "undefined" && wx.miniProgram);
-        console.log("¿Es miniprograma?", window.__wxjs_environment === 'miniprogram');
-        console.log("window.miniProgram existe?", !!window.miniProgram);
 
+        // Al hacer clic en el marcador, redirige con parámetros
         marker.addEventListener("click", () => {
-          console.log("Redirigiendo mediante URL...");
-          // Usa un parámetro único en la URL para forzar la recarga
-          const timestamp = new Date().getTime();
+          const timestamp = new Date().getTime(); // Para evitar caché
           window.location.replace(
             `${window.location.origin}${window.location.pathname}?` +
             `action=openDescription&` +
             `name=${encodeURIComponent(poi.name)}&` +
-            `ts=${timestamp}`  // Evita caché
+            `ts=${timestamp}`
           );
         });
 
         markersWithLabels.push({ marker, label, point: poiPoint, minZoom: poi.zoom });
       });
 
+      // Muestra u oculta etiquetas según zoom y evita superposición
       function updateLabelsVisibility() {
         const zoom = map.getZoom();
         const screenPoints = [];
         const threshold = 100;
+        const gridSize = 80;
+        const clusterGrid = {};
 
         clusterMarkers.forEach(marker => map.removeOverlay(marker));
         clusterMarkers.length = 0;
 
-        const gridSize = 80;
-        const clusterGrid = {};
-
         markersWithLabels.forEach(({ marker, label, point, minZoom }) => {
           const pixel = map.pointToPixel(point);
-          const keyX = Math.floor(pixel.x / gridSize);
-          const keyY = Math.floor(pixel.y / gridSize);
-          const key = `${keyX},${keyY}`;
+          const key = `${Math.floor(pixel.x / gridSize)},${Math.floor(pixel.y / gridSize)}`;
 
           if (zoom < minZoom) {
             marker.hide();
@@ -214,6 +223,7 @@
           } else {
             marker.show();
 
+            // Evita mostrar etiquetas muy cercanas entre sí
             const tooClose = screenPoints.some(existing => {
               const dx = existing.x - pixel.x;
               const dy = existing.y - pixel.y;
@@ -229,6 +239,7 @@
           }
         });
 
+        // Muestra un marcador de clúster si hay muchos POIs juntos
         for (const key in clusterGrid) {
           const cluster = clusterGrid[key];
           if (cluster.count < 2) continue;
@@ -262,8 +273,7 @@
             border: "none"
           });
 
-          clusterMarker.setLabel(clusterLabel);
-
+          // Al hacer clic en un clúster, se hace zoom
           const zoomOnCluster = () => {
             map.centerAndZoom(centerPoint, zoom + 2);
           };
@@ -276,14 +286,16 @@
         }
       }
 
+      // Actualiza etiquetas al hacer zoom o mover el mapa
       map.addEventListener("zoomend", updateLabelsVisibility);
       map.addEventListener("moveend", updateLabelsVisibility);
       updateLabelsVisibility();
     }
 
+    // Inicia el proceso cargando los POIs
     fetchPOIs(params.tourist_destination, params.lat, params.lng, params.zoom, params.boundary, params.tourist_type || null);
-    
-    // Monitorea cambios en el hash y envía al miniprograma
+
+    // Envía el hash al miniprograma de WeChat si cambia
     window.addEventListener("hashchange", () => {
       if (window.miniProgram && typeof window.miniProgram.postMessage === "function") {
         window.miniProgram.postMessage({
