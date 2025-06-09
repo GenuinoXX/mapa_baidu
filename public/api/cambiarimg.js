@@ -13,14 +13,12 @@ export default async function handler(req, res) {
   const cachePath = path.join(CACHE_DIR, fileName);
 
   try {
-    // Revisa si ya está en caché
     try {
       const cached = await fs.readFile(cachePath);
       res.setHeader('Content-Type', 'image/png');
       return res.status(200).send(cached);
     } catch (_) {}
 
-    // Si no está en caché, intenta descargar
     const response = await fetch(imageUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
@@ -38,7 +36,7 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'image/png');
     res.status(200).send(pngBuffer);
   } catch (err) {
-    console.error("❌ Error cambiando imagen:", err.message);
+    console.error("Error cambiando imagen:", err.message);
     res.status(500).send('Error');
   }
 }
